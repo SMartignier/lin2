@@ -1,0 +1,290 @@
+# Module LIN2
+## Installation d'un serveur mutualisé
+##### Olivet Lola & Martignier Stéphane
+1. Installation de Debian 8
+2. Service SSH
+3. Serveur Web Nginx
+4. PHP-FPM
+5. MariaDB
+
+##1 Installation de Debian
+Nous partons d'une machine Debian 8.2 installée de manière habituelle.
+
+##2 Service SSH
+####Installation du service
+En tant que root entrer la commande:
+```
+apt-get install ssh
+```
+####Configuration du service
+Il n'y a rien à configurer pour le service SSH.
+En effet, l'utilisateur "root" ne peut pas, par défaut, se connecter via SSH. Il ne peut se connecteur que directement sur la machine physique.
+Cependant, si pour une raison inconnue, votre compte root peut se connecter via SSH, ouvrez le fichier "/etc/ssh/sshd_config", trouvez la ligne (si elle n'existe pas, l'ajouter)
+```
+ #PermitRootLogin no
+```
+ et enlever le "#" afin d'obtenir 
+```
+ PermitRootLogin no
+```
+ Il vous faut alors redémarrer le service à l'aide de la commande
+```
+ /etc/init.d/ssh restart
+```
+Nous pourrions mettre en place une authentification via clés privées/publics uniquement et désactiver la connexion via mot de passe (afin de se protéger contre le brut force), mais cela forcerait une intervention humaine pour générer ces clés à chaque nouvel utilisateur, or cela n'est pas le but , comme discuté avec M.Hurni.
+
+Toutefois, afin d'augmenter un peu le niveau de sécurité, nous rajoutons les utilisateurs autorisés à se connecter via ssh dans le fichier en utilisant les groupes
+```
+/etc/ssh/sshd_config
+```
+En rajoutant la ligne
+```
+AllowGroups users-ssh
+```
+Il faut donc aussi créer le groupe users-ssh via la commande
+```
+addgroup users-ssh
+```
+puis mettre les utilisateurs autorisés à se connecter via ssh dans le groupe
+```
+adduser <nom_utilisateur> users-ssh
+```
+
+##3 Serveur Web Nginx
+####Installation du serveur
+Il faut vous rendre sur le site officiel de Nginx (nginx.org) et y suivre la marche à suivre pour l'installation sur Debian "Jessie".
+Pour éviter les alertes à l'installation de Nginx, il faut télécharger la clé utilisée pour signer le paquet nginx et l'ajouter à la commande apt-get.
+```
+apt-key add <fichier telecharger>
+```
+Pour installer le serveur lui même il faut ajouter le dépot Nginx aux dépots existants sur la machine. Pour ce faire, ouvrir le fichier
+```
+/etc/apt/sources.list
+```
+et y ajouter les lignes
+```
+deb http://nginx.org/packages/debian/ jessie nginx
+deb-src http://nginx.org/packages/debian/ jessie nginx
+```
+Ensuite on entre la commande
+```
+apt-get update
+apt-get install nginx
+```
+
+####Configuration du serveur
+Les fichiers de configuration du serveur se trouvent dans /etc/nginx/ et le site /usr/shar	e/nginx/. 
+Ouvrez le fichier /etc/nginx/conf.d/default.conf, trouvez la partie
+```
+location / {
+				root /usr/share/nginx/html
+				index index.html index.htm;
+}
+```
+Modifiez la comme ceci :
+```
+root /usr/share/nginx/html
+location / {				
+				index index.html index.htm index.php;
+}
+```
+
+Trouvez ensuite la partie
+```
+#location ~ \.php$ {
+#                try_files $uri =404;
+#                fastcgi_pass localhost:9000;
+#                fastcgi_index index.php;
+#				 fastcgi_param ...
+#				 include fastcgi_params               
+#        }
+```
+Modifiez cette partie comme suit
+```
+location ~ \.php$ {
+              try_files $uri =404;
+              fastcgi_pass unix:/var/run/php5-fpm.sock;
+              fastcgi_index index.php;
+			  include fastcgi_params
+			  fastcgi_param ...               
+       }
+```
+
+Il faudra par la suite rajouter/modifier des fichiers pour chaque nouvel utilisateur.
+
+Rajouter l'utilisateur nginx au group www-data afin qu'il aie les droits sur le fichier socket.
+```
+adduser nginx www-data
+```
+
+##4 PHP-FPM
+####Installation
+
+Pour l’installation de PHP-FPM, entrez la commande
+```
+apt-get install php5-fpm php5-mysql
+```
+
+####Configuration
+Ouvrez le fichier /etc/php5/fpm/php.ini et trouvez la ligne 
+```
+allow_url_fopen = On
+```
+Remplacer la par
+```
+allow_url_fopen = Off
+```
+Puis la ligne
+```
+cgi.fix_pathinfo=1
+```
+Modifiez comme ceci
+```
+cgi.fix_pathinfo=0
+```
+
+##4 MariaDB
+####Installation
+
+Pour l'installation de MariaDB, il faut rentrer les commandes ci-dessous. Si vous n'avez pas la même version de Debian, il faut vous rendre sur le site: https://downloads.mariadb.org/mariadb/repositories/#mirror=cube et sélectionner la version qui correspond.
+
+```
+apt-get install software-properties-common
+apt-key adv --recv-keys --keyserver keyserver.ubuntu.com 0xcbcb082a1bb943db
+add-apt-repository 'deb arch=amd64 http://mariadb.cu.be/repo/10.1/debian jessie main'
+apt-get update
+```
+
+Atttention, si à ce moment là vous avez une erreur dans la commande update par rapport au pilote https manquant, exécutez la ligne de code suivante:
+
+```
+apt-get install apt-transport-https
+apt-get update
+```
+
+On peut maintenant installer MariaDB:
+
+```
+apt-get install mariadb-server
+```
+
+####Configuration
+Loguez vous sur le serveur à l'aide de l'utilisateur root
+```
+mysql -u root -p
+```
+Créer l'utilisateur qui sera utilisé pour l'accès à distance, donnez lui les droits et appliquez les changements.
+```
+create user '<nom_utilisateur>' identified by '<mot_de_passe>';
+grant all privileges on *.* to <nom_utilisateur>@% with grant option;
+flush priliveges;
+```
+Quittez MariaDB puis ouvrez le fichier /etc/mysql/my.cnf, et commenter la ligne
+```
+bind-address = 127.0.0.1 
+```
+qui empêche la connexion à distance. Redémarrer alors MariaDB.
+```
+/etc/init.d/mysql restart
+```
+Vous pouvez maintenant utiliser un accès à distance type workbench pour administrez MariaDB.
+
+##4 Marche à suivre pour l'ajout d'un utilisateur
+
+####Créer l'utilisateur en question
+```
+adduser <nom_d'utilisateur>
+```
+
+####Création de son répertoire pour le site
+```
+mkdir /home/<nom_d'utilisateur>/www
+```
+Nous décidons de donner le nom de www au répertoire qui contiendra les sites des utilisateurs. Vous pouvez bien sûr changer ce nom ou l'endroit ou vous stockerez les sites, mais il faudra alors appliquer ces changements partout dans la suite de la manipulation.
+
+On donne ensuite les droits d'accès uniquement au propriétaire du site.
+```
+chown <nom_d'utilisateur> /home/<nom_d'utilisateur>/www
+chgrp <nom_d'utilisateur> /home/<nom_d'utilisateur>/www
+chmod 770 /home/<nom_d'utilisateur>/www
+```
+On y met les fichiers de bases
+```
+cp /usr/share/nginx/html/* /home/<nom_d'utilisateur>/www
+chown site-test /home/<nom_d'utilisateur>/www/*
+chgrp site-test /home/<nom_d'utilisateur>/www/*
+chmod 760 /home/<nom_d'utilisateur>/www/*
+```
+On rajoute l'utilisateur dans le groupe des personnes autorisées à se connecter en SSH
+```
+adduser <nom_d'utilsateur> users-ssh
+```
+
+
+####Configuration nginx, php-fpm
+Créez une copie du fichier /etc/nginx/conf.d/default.conf sous <nom_d'utilisateur>.conf
+Trouvez les lignes
+```
+server_name localhost
+[...]
+root /usr/share/nginx/html;
+[...]
+fastcgi_pass unix:/var/run/php5-fpm.sock;
+```
+Et modifiez en
+```
+server_name <nom_du_site>
+[...]
+root /home/<nom_d'utilisateur>/www;
+[...]
+fastcgi_pass unix:/var/run/<nom_d'utilisateur>.sock;
+[...]
+```
+
+Pour PHP-fpm nous commençons par créer une copie du fichier /etc/php5/fpm/ sous 
+```
+chown <nom_d'utilisateur> /home/<nom_d'utilisateur>/www
+chmod 700 /home/<nom_d'utilisateur>/www
+```
+Puis à l'intérieur de ce fichier, trouvez les lignes
+```
+[www]
+[...]
+user = www-data
+group = www-data
+[...]
+listen = /var/run/php5-fpm.sock
+```
+Changez les comme suit
+```
+[<nom_d'utilisateur>]
+[...]
+user = <nom_d'utilisateur>
+group = <nom_d'utilisateur>
+[...]
+listen = /var/run/nom_d'utilisateur.sock
+[...]
+listen.owner = site-test
+listen.group = site-test
+```
+
+####Configuration MariaDB
+
+On se connecte sur mysql, puis on crée l'utilisateur:
+```
+create user '<nom_utilisateur>' identified by '<mot_de_passe>';
+```
+
+ on crée une base de données pour l'utilisateur
+
+```
+create DATABASE <nom_BDD>;
+```
+
+On donne les droits sur la base de données et d'accès à distance:
+
+```
+grant all privileges on <nom_BDD>.* to '<nom_utilisateur>'@'%' with grant option;
+```
+
+Tout est maintenant prêt pour une utilisation par les utilisateurs.
