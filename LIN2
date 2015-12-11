@@ -29,36 +29,31 @@ apt-get install ssh
 
 ####Configuration du service
 
-Il n'y a rien à configurer pour le service SSH. En effet, l'utilisateur "root" ne peut pas, par défaut, se connecter via SSH. Il ne peut se connecter que directement sur la machine physique. Cependant, si, pour une raison inconnue, votre compte root peut se connecter via SSH, ouvrez le fichier "/etc/ssh/sshd_config", trouvez la ligne et si elle n'existe pas, l'ajouter.
+L'utilisateur "root" ne peut pas, par défaut, se connecter via SSH. Il ne peut se connecter que directement sur la machine physique. Cependant, si pour une raison inconnue, votre compte root peut se connecter via SSH, ouvrez le fichier `/etc/ssh/sshd_config`, trouvez la ligne suivante:
 
 ```
  #PermitRootLogin no
 
 ```
 
- et enlever le "#" afin d'obtenir:
+si elle n'existe pas, l'ajouter et enlever le "#" afin d'obtenir:
 
 ```
  PermitRootLogin no
 
 ```
 
- Il vous faut alors redémarrer le service à l'aide de la commande:
+Nous pourrions mettre en place une authentification via clés privées/publiques uniquement et désactiver la connexion via mot de passe, afin de se protéger contre le brut force. Mais cela forcerait une intervention humaine pour générer ces clés à chaque nouvel utilisateur, or cela n'est pas le but, comme discuté avec M.Hurni.
 
-```
- /etc/init.d/ssh restart
-
-```
-Nous pourrions mettre en place une authentification via clés privées/publiques uniquement et désactiver la connexion via mot de passe, afin de se protéger contre le brut force, mais cela forcerait une intervention humaine pour générer ces clés à chaque nouvel utilisateur. Or cela n'est pas le but, comme discuté avec M.Hurni.
-
-Toutefois, afin d'augmenter un peu le niveau de sécurité, nous rajoutons les utilisateurs autorisés à se connecter via ssh dans le fichier en utilisant les groupes:
+Toutefois, afin d'augmenter un peu le niveau de sécurité, nous rajoutons les utilisateurs autorisés à se connecter via ssh dans le fichier en utilisant les groupes. Cela demande toujours une intervention humaine, mais celle-ci est simplifiée.
+Toujours dans le fichier:
 
 ```
 /etc/ssh/sshd_config
 
 ```
 
-En rajoutant la ligne:
+Ajouter la ligne:
 
 ```
 AllowGroups users-ssh
@@ -72,10 +67,24 @@ addgroup users-ssh
 
 ```
 
-puis mettre les utilisateurs autorisés à se connecter via ssh dans le groupe.
+Plus tard nous mettrons les utilisateurs autorisés à se connecter via SSH dans ce groupe. Si vous voulez dès à présent créer un utilisateur autorisé à se connecter via SSH, créez l'utilisateur à l'aide de la commande suivante:
 
 ```
 adduser <nom_utilisateur> users-ssh
+
+```
+
+Suivez les instructions à l'écran puis ajouter cet utilisateur au groupe users-ssh.
+
+```
+adduser <nom_utilisateur> users-ssh
+
+```
+
+ Il vous faut alors redémarrer le service à l'aide de la commande:
+
+```
+ /etc/init.d/ssh restart
 
 ```
 
@@ -84,7 +93,7 @@ adduser <nom_utilisateur> users-ssh
 
 ####Installation du serveur
 
-Il faut vous rendre sur le site officiel de Nginx, nginx.org, et y suivre la marche à suivre pour l'installation sur Debian "Jessie". Pour éviter les alertes à l'installation de Nginx, il faut télécharger la clé utilisée pour signer le paquet nginx et l'ajouter à la commande apt-get.
+Il faut vous rendre sur le site officiel de Nginx, nginx.org, et y suivre la marche à suivre pour l'installation sur Debian "Jessie". Il est possible d'éviter les alertes à l'installation de Nginx, en téléchargeant la clé utilisée pour signer le paquet nginx et l'ajouter à la commande apt-get. Cette étape n'est donc pas obligatoire.
 
 ```
 apt-key add <fichier telecharger>
@@ -98,7 +107,7 @@ Pour installer le serveur lui-même, il faut ajouter le dépot Nginx aux dépots
 
 ```
 
-et y ajouter les lignes:
+on ajoute le dépot avec les lignes:
 
 ```
 deb http://nginx.org/packages/debian/ jessie nginx
@@ -106,7 +115,7 @@ deb-src http://nginx.org/packages/debian/ jessie nginx
 
 ```
 
-Ensuite on entre la commande:
+Ensuite on installe nginx avec les commandes:
 
 ```
 apt-get update
@@ -116,7 +125,7 @@ apt-get install nginx
 
 ####Configuration du serveur
 
-Les fichiers de configuration du serveur se trouvent dans `/etc/nginx/` et le site `/usr/share/nginx/`. Ouvrez le fichier `/etc/nginx/conf.d/default.conf`, trouvez la partie:
+Les fichiers de configuration du serveur se trouvent dans `/etc/nginx/` et le site dans `/usr/share/nginx/`. Ouvrez le fichier `/etc/nginx/conf.d/default.conf` et trouvez la partie:
 
 ```
 location / {
@@ -140,31 +149,31 @@ Ensuite, trouvez la partie:
 
 ```
 #location ~ \.php$ {
-#	try_files $uri =404;
+#	root html;
 #       fastcgi_pass localhost:9000;
 #       fastcgi_index index.php;
-#		fastcgi_param ...
-#		include fastcgi_params               
+#	fastcgi_param ...
+#	include fastcgi_params               
 #}
 
 ```
 
-Modifiez cette partie ainsi:
+Appliquez les modifications suivantes:
 
 ```
 location ~ \.php$ {
-	try_files $uri =404;
+	#root html;
         fastcgi_pass unix:/var/run/php5-fpm.sock;
         fastcgi_index index.php;
-		include fastcgi_params
-		fastcgi_param ...               
+	include fastcgi_params
+	fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;              
 }
 
 ```
 
 Il faudra, par la suite, rajouter/modifier des fichiers pour chaque nouvel utilisateur.
 
-Rajouter l'utilisateur nginx au group www-data afin qu'il ait les droits sur le fichier socket.
+Rajoutez l'utilisateur nginx au group www-data afin qu'il ait les droits sur le fichier socket.
 
 ```
 adduser nginx www-data
@@ -226,7 +235,7 @@ apt-get update
 
 ```
 
-Atttention, si à ce moment-là vous avez une erreur dans la commande `update` par rapport au pilote https manquant, exécutez la ligne de code suivante:
+Atttention, si à ce moment-là vous avez une erreur dans la commande `apt-get update` par rapport au pilote https manquant, exécutez la ligne de code suivante:
 
 ```
 apt-get install apt-transport-https
@@ -243,7 +252,7 @@ apt-get install mariadb-server
 
 ####Configuration
 
-Loguez vous sur le serveur à l'aide de l'utilisateur root.
+Loguez-vous sur le serveur à l'aide de l'utilisateur root.
 
 ```
 mysql -u root -p
@@ -254,11 +263,11 @@ Créez l'utilisateur qui sera utilisé pour l'accès à distance, donnez-lui les
 
 ```
 create user '<nom_utilisateur>' identified by '<mot_de_passe>';
-grant all privileges on *.* to <nom_utilisateur>@% with grant option;
-flush priliveges;
+GRANT alter, delete, execute, insert, references, select, update, create ON TABLE <nom_database>.* TO ‘<nom_utilisateur>’%’ WITH GRANT OPTION ;
+flush privileges;
 
 ```
-Quittez MariaDB, puis ouvrez le fichier `/etc/mysql/my.cnf`, et commentez la ligne:
+Quittez MariaDB puis ouvrez le fichier `/etc/mysql/my.cnf` et commentez la ligne:
 
 ```
 bind-address = 127.0.0.1
@@ -276,9 +285,9 @@ Vous pouvez maintenant utiliser un accès à distance, par exemple workbench, po
 
 
 
-##6 Marche à suivre pour l'ajout d'un utilisateur
+##6 Ajout d'un utilisateur
 
-####Création de l'utilisateur en question
+####Création de l'utilisateur
 
 ```
 adduser <nom_utilisateur>
@@ -296,33 +305,44 @@ Nous décidons de donner le nom de www au répertoire qui contiendra les sites d
 On donne ensuite les droits d'accès uniquement au propriétaire du site.
 
 ```
-chown <nom_utilisateur> /home/<nom_utilisateur>/www
-chgrp <nom_utilisateur> /home/<nom_utilisateur>/www
+chown <nom_utilisateur>:<nom_utilisateur> /home/<nom_utilisateur>/www
 chmod 770 /home/<nom_utilisateur>/www
 
 ```
 
-On y met les fichiers de bases:
+On y copie les fichiers de base et on y applique les droits suivants:
 
 ```
 cp /usr/share/nginx/html/* /home/<nom_utilisateur>/www
-chown site-test /home/<nom_utilisateur>/www/*
-chgrp site-test /home/<nom_utilisateur>/www/*
+chown <nom_utilisateur>:<nom_utilisateur> /home/<nom_utilisateur>/www/*
 chmod 760 /home/<nom_utilisateur>/www/*
 
 ```
 
-On rajoute l'utilisateur dans le groupe des personnes autorisées à se connecter en SSH.
+On rajoute l'utilisateur dans le groupe autorisé à se connecter en SSH.
 
 ```
 adduser <nom_utilsateur> users-ssh
 
 ```
 
-####Configuration nginx et php-fpm
+Pour finir, on ajoute l'utilisateur nginx au groupe <nom_utilisateur> afin qu'il ait accès au contenu du site.
+
+```
+adduser nginx <nom_d'utilsateur>
+
+```
+
+####Configuration nginx, php-fpm
 
 Créez une copie du fichier `/etc/nginx/conf.d/default.conf` sous `<nom_utilisateur>.conf`.
-Trouvez les lignes:
+
+```
+cp /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/<nom_site>.conf
+
+```
+
+Ouvrez le fichier copié et trouvez les lignes:
 
 ```
 server_name localhost
@@ -330,6 +350,12 @@ server_name localhost
 [...]
 
 root /usr/share/nginx/html;
+
+[...]
+
+location = /50x.html {
+	root /usr/share/nginx/html;
+}
 
 [...]
 
@@ -344,21 +370,27 @@ server_name <nom_du_site>
 
 [...]
 
-root /home/<nom_utilisateur>/www;
+root /home/<nom_d'utilisateur>/www;
 
 [...]
 
-fastcgi_pass unix:/var/run/<nom_utilisateur>.sock;
+location = /50x.html {
+	root /home/<nom_d'utilisateur>/www;
+}
+
+[...]
+
+fastcgi_pass unix:/var/run/<nom_site>.sock;
 
 [...]
 
 ```
 
-Pour PHP-fpm, nous commençons par créer une copie du fichier `/etc/php5/fpm/` sous:
+Pour PHP-fpm, nous commençons par créer une copie du fichier `/etc/php5/fpm/` sous <nom_site>.conf:
 
 ```
-chown <nom_utilisateur> /home/<nom_utilisateur>/www
-chmod 700 /home/<nom_utilisateur>/www
+chown <nom_d'utilisateur>:<nom_utilisateur> /etc/php5/fpm/pool.d/<nom_utilisateur>.conf
+chmod 760 /etc/php5/fpm/pool.d/<nom_utilisateur>.conf
 
 ```
 
@@ -376,11 +408,16 @@ group = www-data
 
 listen = /var/run/php5-fpm.sock
 
+[...]
+
+listen.owner = www-data
+listen.group = www-data
+
 ```
 Changez-les comme suit:
 
 ```
-[<nom_utilisateur>]
+[<nom_site>]
 
 [...]
 
@@ -389,12 +426,12 @@ group = <nom_utilisateur>
 
 [...]
 
-listen = /var/run/nom_utilisateur.sock
+listen = /var/run/<nom_site>.sock
 
 [...]
 
-listen.owner = site-test
-listen.group = site-test
+listen.owner = <nom_utilisateur>
+listen.group = <nom_utilisateur>
 
 ```
 
@@ -418,6 +455,7 @@ On donne les droits sur la base de données et pour l'accès à distance:
 
 ```
 grant all privileges on <nom_BDD>.* to '<nom_utilisateur>'@'%' with grant option;
+flush privileges;
 
 ```
 
