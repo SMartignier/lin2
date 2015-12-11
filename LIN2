@@ -263,7 +263,7 @@ Créez l'utilisateur qui sera utilisé pour l'accès à distance, donnez-lui les
 
 ```
 create user '<nom_utilisateur>' identified by '<mot_de_passe>';
-GRANT alter, delete, execute, insert, references, select, update, create ON TABLE <nom_database>.* TO ‘<nom_utilisateur>’%’ WITH GRANT OPTION ;
+grant all privileges on *.* to '<nom_utilisateur>'@'%' with grant option;
 flush privileges;
 
 ```
@@ -454,7 +454,7 @@ create DATABASE <nom_BDD>;
 On donne les droits sur la base de données et pour l'accès à distance:
 
 ```
-grant all privileges on <nom_BDD>.* to '<nom_utilisateur>'@'%' with grant option;
+GRANT alter, delete, execute, insert, references, select, update, create ON TABLE <nom_database>.* TO ‘<nom_utilisateur>’%’ WITH GRANT OPTION;
 flush privileges;
 
 ```
