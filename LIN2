@@ -326,7 +326,7 @@ adduser <nom_utilsateur> users-ssh
 
 ```
 
-Pour finir, on ajoute l'utilisateur nginx au groupe <nom_utilisateur> afin qu'il ait accès au contenu du site.
+Pour finir, on ajoute l'utilisateur nginx au groupe `<nom_utilisateur>` afin qu'il ait accès au contenu du site.
 
 ```
 adduser nginx <nom_d'utilsateur>
@@ -335,7 +335,7 @@ adduser nginx <nom_d'utilsateur>
 
 ####Configuration nginx, php-fpm
 
-Créez une copie du fichier `/etc/nginx/conf.d/default.conf` sous `<nom_utilisateur>.conf`.
+Créez une copie du fichier `/etc/nginx/conf.d/default.conf` sous `<nom_site>.conf`.
 
 ```
 cp /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/<nom_site>.conf
@@ -386,11 +386,15 @@ fastcgi_pass unix:/var/run/<nom_site>.sock;
 
 ```
 
-Pour PHP-fpm, nous commençons par créer une copie du fichier `/etc/php5/fpm/` sous <nom_site>.conf:
-
+Pour PHP-fpm, nous commençons par créer une copie du fichier `/etc/php5/fpm/pool.d/www.conf` sous `<nom_site>`.conf:
 ```
-chown <nom_d'utilisateur>:<nom_utilisateur> /etc/php5/fpm/pool.d/<nom_utilisateur>.conf
-chmod 760 /etc/php5/fpm/pool.d/<nom_utilisateur>.conf
+cp /etc/php5/fpm/pool.d/www.conf /etc/php5/fpm/pool.d/<nom_site>.conf
+```
+
+Puis on applique les droits et les changements de propriétaires.
+```
+chown <nom_d'utilisateur>:<nom_utilisateur> /etc/php5/fpm/pool.d/<nom_site>.conf
+chmod 760 /etc/php5/fpm/pool.d/<nom_site>.conf
 
 ```
 
