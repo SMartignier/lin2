@@ -4,6 +4,10 @@
 
 ##### Olivet Lola & Martignier Stéphane
 
+##0 But
+
+Ce document sert à expliquer la marche à suivre afin de mettre en place un serveur mutualisé.
+
 1. Installation de Debian 8
 2. Service SSH
 3. Serveur Web Nginx
@@ -13,8 +17,26 @@
 
 ##1 Installation de Debian
 
-Nous partons d'une machine Debian 8.2 installée de manière habituelle.
+####Hardware
 
+La machine utilisée pour créer cette marche à suivre dispose des composants suivants:
+- Processeur 4 core
+- 4 GB de RAM
+- Un HDD de 20 GB
+- Un lecteur CD/DVD
+- Une carte réseau
+
+####1Installation
+
+Nous partons d'une machine Debian 8.2(Jessie) installée de manière habituelle.
+
+Pour ce faire, nous utilisons l'ISO disponible sur le site officiel Debian (http://cdimage.debian.org/debian-cd/8.2.0/amd64/iso-cd/)
+
+Pour l'installation elle-même, nous avons suivi les instructions affichées à l'écran. La seule modification à faire est de décocher l'interface graphique.
+
+Pour le miroir, nous avons séléctionné le miroir officiel Debian de la Suisse.
+
+Pour le partionnement du HDD, nous avons pris le choix par défaut de Debian.
 
 ##2 Service SSH
 
