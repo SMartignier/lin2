@@ -2,9 +2,11 @@
 
 ## Installation d'un serveur mutualisé
 
-##### Olivet Lola & Martignier Stéphane
+Auteurs :
+ * Olivet Lola
+ * Martignier Stéphane
 
-## 0 But
+## But
 
 Ce document sert à expliquer la marche à suivre afin de mettre en place un serveur mutualisé.
 
@@ -15,9 +17,9 @@ Ce document sert à expliquer la marche à suivre afin de mettre en place un ser
 5. MariaDB
 
 
-## 1 Installation de Debian
+## Installation de Debian
 
-#### Hardware
+### Hardware
 
 La machine utilisée pour créer cette marche à suivre dispose des composants suivants:
 - Processeur 4 core
@@ -26,9 +28,9 @@ La machine utilisée pour créer cette marche à suivre dispose des composants s
 - Un lecteur CD/DVD
 - Une carte réseau
 
-#### 1 Installation
+### Installation
 
-Nous partons d'une machine Debian 8.2(Jessie) installée de manière habituelle.
+Nous partons d'une machine Debian 8.2(Jessie) installée via l'ISO CD architecture amd64 complete (debian-8.2.0-amd64-CD-1.iso).
 
 Pour ce faire, nous utilisons l'ISO disponible sur le site officiel Debian (http://cdimage.debian.org/debian-cd/8.2.0/amd64/iso-cd/)
 
@@ -38,9 +40,9 @@ Pour le miroir, nous avons séléctionné le miroir officiel Debian de la Suisse
 
 Pour le partionnement du HDD, nous avons pris le choix par défaut de Debian.
 
-## 2 Service SSH
+## Service SSH
 
-#### Installation du service
+### Installation du service
 
 En tant que root entrer la commande:
 
@@ -49,7 +51,7 @@ apt-get install ssh
 
 ```
 
-#### Configuration du service
+### Configuration du service
 
 L'utilisateur "root" ne peut pas, par défaut, se connecter via SSH. Il ne peut se connecter que directement sur la machine physique. Cependant, si pour une raison inconnue, votre compte root peut se connecter via SSH, ouvrez le fichier `/etc/ssh/sshd_config`, trouvez la ligne suivante:
 
@@ -111,9 +113,9 @@ adduser <nom_utilisateur> users-ssh
 ```
 
 
-## 3 Serveur Web Nginx
+## Serveur Web Nginx
 
-#### Installation du serveur
+### Installation du serveur
 
 Il faut vous rendre sur le site officiel de Nginx, nginx.org, et y suivre la marche à suivre pour l'installation sur Debian "Jessie". Il est possible d'éviter les alertes à l'installation de Nginx, en téléchargeant la clé utilisée pour signer le paquet nginx et l'ajouter à la commande apt-get. Cette étape n'est donc pas obligatoire.
 
@@ -145,7 +147,7 @@ apt-get install nginx
 
 ```
 
-#### Configuration du serveur
+### Configuration du serveur
 
 Les fichiers de configuration du serveur se trouvent dans `/etc/nginx/` et le site dans `/usr/share/nginx/`. Ouvrez le fichier `/etc/nginx/conf.d/default.conf` et trouvez la partie:
 
@@ -203,9 +205,9 @@ adduser nginx www-data
 ```
 
 
-## 4 PHP-FPM
+## PHP-FPM
 
-#### Installation
+### Installation
 
 Pour l’installation de PHP-FPM, entrez la commande suivante:
 
@@ -214,16 +216,16 @@ apt-get install php5-fpm php5-mysql
 
 ```
 
-#### Configuration
+### Configuration
 
 Il n'y a rien de spéciale à configurer.
 
 Nous décidons de laisser fopen activé, c'est aux utilisateurs de faire attention à la manière dont ils utilisent les query string.
 
 
-## 5 MariaDB
+## MariaDB
 
-#### Installation
+### Installation
 
 Pour l'installation de MariaDB, il faut rentrer les commandes ci-dessous. Si vous n'avez pas la même version de Debian, il faut vous rendre sur le site: https://downloads.mariadb.org/mariadb/repositories/#mirror=cube et sélectionner la version qui correspond.
 
@@ -250,7 +252,7 @@ apt-get install mariadb-server
 
 ```
 
-#### Configuration
+### Configuration
 
 Loguez-vous sur le serveur à l'aide de l'utilisateur root.
 
@@ -285,16 +287,16 @@ Vous pouvez maintenant utiliser un accès à distance, par exemple workbench, po
 
 
 
-## 6 Ajout d'un utilisateur
+## Ajout d'un utilisateur
 
-#### Création de l'utilisateur
+### Création de l'utilisateur
 
 ```
 adduser <nom_utilisateur>
 
 ```
 
-#### Création de son répertoire pour le site
+### Création de son répertoire pour le site
 
 ```
 mkdir /home/<nom_d'utilisateur>/www
@@ -333,7 +335,7 @@ adduser nginx <nom_d'utilsateur>
 
 ```
 
-#### Configuration nginx, php-fpm
+### Configuration nginx, php-fpm
 
 Créez une copie du fichier `/etc/nginx/conf.d/default.conf` sous `<nom_site>.conf`.
 
@@ -439,7 +441,7 @@ listen.group = <nom_utilisateur>
 
 ```
 
-#### Configuration MariaDB
+### Configuration MariaDB
 
 On se connecte sur mysql, puis on crée l'utilisateur.
 
